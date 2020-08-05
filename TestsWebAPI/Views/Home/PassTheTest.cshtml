@@ -1,0 +1,146 @@
+﻿<div class="pass-view flex-column">
+    <div class="test-name">
+        <h2>TEST NAME</h2>
+    </div>
+
+    <div class="question-count flex">
+        <h3> Question count: </h3>
+        <div class="count-block flex flex-row">
+            <h3 class="current">1</h3>/<h3 class="all">15</h3>
+        </div>
+    </div>
+
+    <div class="question">
+        <h3 class="question-name">QUESTION TEXT</h3>
+        <ul class="answers"></ul>
+    </div>
+
+    <div class="controls">
+        <button>Next question</button>
+    </div>
+</div>
+
+@section scripts
+{
+    <script>
+        $(document).ready(function () {
+            $('.controls button').on('click', function (event) {
+                event.preventDefault();
+
+                let answerSelect = $('input[name="answer"]:checked');
+                let index = answerSelect.val();
+
+                checkQuestion(questionIndex++, index);
+
+                if (questionIndex < questionCount) {
+                    setCurrentQuestionIndex(questionIndex + 1);
+                    loadNext();
+                } else {
+                    questionReadyInterval = setInterval(() => readyTest(), 500);
+                }
+            });
+        });
+
+        let testId = @ViewBag.testId;
+        let questionIndex = 0;
+        let questionCount = 0;
+        let questionRestults = [];
+        let questionReadyInterval;
+
+        $.ajax({
+            url: '../../api/tests/' + testId,
+            type: 'GET',
+            dataType: 'json',
+            success: function (data) {
+                displayData(data)
+            },
+            error: function (jqXHR, status, error) {
+                alert(status + ' ' + error);
+            }
+        });
+
+        function displayData(data) {
+            let passBlock = $('.pass-view');
+
+            passBlock.find('.test-name h2').text(data.Name);
+
+            questionCount = data.Questions.length;
+            setMaxQuestionIndex(questionCount);
+
+            loadNext();
+        }
+
+        function checkQuestion(id, index) {
+            $.ajax({
+                url: '../../api/tests/CheckQuestion?testId=' + testId + '&questionIndex=' + id + '&index=' + index,
+                type: 'GET',
+                dataType: 'json',
+                success: function (data) {
+                    questionResult(data);
+                },
+                error: function (jqXHR, status, error) {
+                    alert(status + ' ' + error);
+                }
+            });
+        }
+
+        function questionResult(data) {
+            questionRestults.push(data);
+        }
+
+        function loadQuestion(index) {
+            $.ajax({
+                url: '../../api/tests/LoadQuestion?testId=' + testId + '&questionIndex=' + index,
+                type: 'GET',
+                dataType: 'json',
+                success: function (data) {
+                    clearAnswers();
+
+                    let answerList = $('.question');
+
+                    answerList.find('h3').text(data.Text);
+
+                    data.Answers.forEach(function (item, index, array) {
+                        answerList.find('ul').append('<li class="flex flex-row"><input type="radio" name="answer" value="' + item.Index + '"> <p>' + item.Text + '</p> </li>');
+                    });
+                },
+                error: function (jqXHR, status, error) {
+                    alert(status + ' ' + error);
+                }
+            });
+        }
+
+        function clearAnswers() {
+            $('.question').find('ul').empty();
+        }
+
+        function loadNext() {
+            loadQuestion(questionIndex);
+        }
+
+        function setCurrentQuestionIndex(value) {
+            $('.count-block h3.current').html(value);
+        }
+
+        function setMaxQuestionIndex(value) {
+            $('.count-block h3.all').html(value);
+        }
+
+        function readyTest() {
+            if (questionCount == questionRestults.length) {
+                clearInterval(questionReadyInterval);
+
+                let correctCount = 0;
+
+                questionRestults.forEach(function (item, index, array) {
+                    if (item == true)
+                        correctCount++;
+                });
+
+                alert(correctCount + '/' + questionCount);
+
+                window.location.href = '../';
+            }
+        }
+    </script>
+}

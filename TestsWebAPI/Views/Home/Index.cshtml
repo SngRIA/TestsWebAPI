@@ -1,0 +1,273 @@
+﻿<div class="preview-block shadow-panel center-panel flex-column">
+    <div class="preview-header">
+        <h3></h3>
+        <button class="close" style="width: 25px;">X</button>
+    </div>
+
+    <hr />
+
+    <div class="preview-content">
+        <h4></h4>
+        <div class="preview-questions">
+            <h4></h4>
+            <ul class="questions"></ul>
+        </div>
+    </div>
+
+    <hr />
+
+    <div class="preview-controls flex-row">
+        <ul class="tags"></ul>
+        <button class="open">Open</button>
+    </div>
+</div>
+
+<div class="center-panel search-block">
+    <p style="height: 25px; padding: 0 5px 0 5px;">&#x1F50D;</p>
+    <div class="search-object"><input type="text" id="searchText" placeholder="Input test name or tag, like as t:tag1 tag2 tag3" /></div>
+    <button id="search-button">Search</button>
+</div>
+
+<div class="tests-block"></div>
+
+<div id="template-test-block" class="test-info-block flex-column">
+    <h3></h3>
+    <h4></h4>
+    <div class="controls flex-row">
+        <ul class="tags flex-row"></ul>
+        <button>Open</button>
+    </div>
+</div>
+
+<div id="template-tag" class="test-tag">
+    <a></a>
+</div>
+
+<div id="template-question" class="test-question">
+    <a></a>
+</div>
+@section scripts
+{
+    <script>
+        $(document).ready(function () {
+            updateTestsList();
+
+            $('#search-button').on('click', function (event) {
+                event.preventDefault();
+                searchContent();
+            });
+        });
+
+        function updateTestsList() {
+            $.ajax({
+                url: '../api/tests',
+                type: 'GET',
+                dataType: 'json',
+                success: function (data) {
+                    displayDataFromResponse(data);
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    printError(textStatus);
+                }
+            });
+        }
+
+        function displayDataFromResponse(data) {
+            if (data == null) {
+                $('.tests-block').text('Не найдено')
+                return;
+            }
+
+            data.forEach((item, index, array) => {
+                let newTestBlock = $('#template-test-block').clone();
+
+                newTestBlock.removeAttr('id');
+                newTestBlock.attr('data-id', item.Id);
+
+                newTestBlock.find('h3').text(item.Name);
+                newTestBlock.find('h4').text(item.Description);
+
+                let divControls = newTestBlock.find('div');
+
+                item.Tags.forEach((item, index, array) => {
+                    let newTagBlock = $('#template-tag').clone();
+
+                    newTagBlock.removeAttr('id');
+                    newTagBlock.attr('data-id', item.Id);
+
+                    let aTagElement = newTagBlock.find('a');
+
+                    aTagElement.text(item.Name);
+                    aTagElement.on('click', function (event) {
+                        event.preventDefault();
+                        searchByTag(item.Id, item.Name);
+                    });
+
+                    newTagBlock.appendTo(divControls.find('ul'));
+                });
+
+                divControls.find('button').on('click', function (event) {
+                    event.preventDefault();
+                    openPreview(newTestBlock);
+                });
+
+                newTestBlock.appendTo('.tests-block');
+            });
+        }
+
+        function printError(data) {
+            alert(data);
+        }
+
+        function searchContent() {
+            let textRequest = $('#searchText').val();
+
+            let searchRequest;
+
+            if (textRequest.includes('t:')) {
+                searchRequest = {
+                    tags: textRequest.replace('t:', '')
+                };
+            } else {
+                searchRequest = {
+                    name: textRequest
+                };
+            }
+
+            $.ajax({
+                url: '../api/tests/searchTests',
+                type: 'POST',
+                dataType: 'json',
+                data: JSON.stringify(searchRequest),
+                success: function (data) {
+                    clearTestsBlock();
+
+                    displayDataFromResponse(data);
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    printError(textStatus);
+                }
+            });
+        }
+
+        function clearTestsBlock() {
+            $('.tests-block').empty();
+        }
+
+        function openPreview(element) {
+            let testId = element.attr('data-id');
+            $.ajax({
+                url: '../api/tests/' + testId,
+                type: 'GET',
+                dataType: 'json',
+                success: function (data) {
+                    clearPreview();
+                    showPreview();
+
+                    let previewElement = $('.preview-block');
+
+                    //Header(name and close button)
+                    let divHeader = previewElement.find('.preview-header');
+
+                    divHeader.find('h3').text(data.Name);
+                    divHeader.find('button').on('click', function (event) {
+                        event.preventDefault();
+                        closePreview();
+                    });
+
+                    //Content(description and questions)
+                    let divContent = previewElement.find('.preview-content');
+
+                    data.Questions.forEach((item, index, array) => {
+                        let newQuestionBlock = $('#template-question').clone();
+
+                        newQuestionBlock.removeAttr('id');
+                        newQuestionBlock.find('a').text(item.Text);
+
+                        newQuestionBlock.appendTo(divContent.find('ul'));
+                    });
+
+                    previewElement.find('h4').text(data.Description);
+                    previewElement.find('.preview-questions h4').text('Questions');
+
+                    //Footer(tags and open button)
+                    let divControls = previewElement.find('.preview-controls');
+
+                    data.Tags.forEach((item, index, array) => {
+                        let newTagBlock = $('#template-tag').clone();
+                        newTagBlock.removeAttr('id');
+                        newTagBlock.attr('data-id', item.Id);
+
+                        let aTagElement = newTagBlock.find('a');
+                        aTagElement.text(item.Name);
+                        aTagElement.on('click', function (event) {
+                            event.preventDefault();
+                            searchByTag(item.Id, item.Name);
+                        });
+
+                        newTagBlock.appendTo(divControls.find('ul'));
+                    });
+
+                    previewElement.find('button.open').on('click', function (event) {
+                        closePreview();
+                        openTest(testId);
+                    });
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    printError(textStatus);
+                }
+            });
+        }
+
+        function showPreview() {
+            $('.preview-block').css("display", "flex");
+        }
+
+        function hidePreview() {
+            $('.preview-block').css("display", "none");
+        }
+
+        function closePreview() {
+            hidePreview();
+
+            clearPreview();
+        }
+
+        function clearPreview() {
+            clearPreviewQuestions();
+            clearPreviewTags();
+        }
+
+        function clearPreviewQuestions() {
+            $('.preview-block .questions').empty();
+        }
+
+        function clearPreviewTags() {
+            $('.preview-block .tags').empty();
+        }
+
+        function searchByTag(id, nameTag) {
+            $.ajax({
+                url: '../api/tests/SearchTag',
+                type: 'POST',
+                dataType: 'json',
+                contentType: "application/json;charset=utf-8",
+                data: JSON.stringify({
+                    Id: id,
+                    Name: nameTag
+                }),
+                success: function (data) {
+                    clearTestsBlock();
+                    displayDataFromResponse(data);
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    printError(textStatus);
+                }
+            });
+        }
+
+        function openTest(id) {
+            window.location.href = '/Home/PassTheTest/' + id;
+        }
+    </script>
+}

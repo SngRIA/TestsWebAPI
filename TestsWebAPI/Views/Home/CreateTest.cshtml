@@ -1,0 +1,570 @@
+﻿<div class="create-test flex-column">
+    <div class="header flex flex-row">
+        <h2> Test name: </h2>
+        <input type="text" name="testName" placeholder="test name" />
+    </div>
+
+    <div class="header description flex flex-row">
+        <h3> Description: </h3>
+        <input type="text" name="description" placeholder="enter you description"/>
+    </div>
+
+    <div class="questions">
+        <h3>Questions</h3>
+        <div class="list"></div>
+        <div class="question-controls">
+            <input type="text" name="newQuestion" placeholder="enter you question" />
+            <button class="add"> Add question </button>
+        </div>
+    </div>
+
+    <div class="tags">
+        <h3>Tags</h3>
+        <div class="list flex-row"></div>
+        <div class="tags-controls">
+            <input type="text" name="newTag" placeholder="enter you tag" />
+            <button class="addTag"> Add tag </button>
+        </div>
+    </div>
+
+    <div class="test-controls">
+        <button class="cancel"> Cancel </button>
+        <button class="create"> Create </button>
+    </div>
+</div>
+
+<div id="template-question" class="create-question">
+    <h4 class="question-id"> Question </h4>
+
+    <div class="question-controls">
+        <input type="text" name="question" placeholder="enter you question" />
+        <button>Remove</button>
+    </div>
+
+    <h4> Answers: </h4>
+
+    <div class="answers">
+    </div>
+
+    <div class="answer-controls">
+        <input type="text" name="newAnswer" placeholder="enter you answer" />
+        <button class="add"> Add answer </button>
+    </div>
+</div>
+
+<div id="template-answer" class="answer">
+    <input type="text" name="answer" placeholder="enter you answer" />
+    <button> Remove </button>
+</div>
+
+<div id="template-tag" class="test-tag">
+    <input type="text" name="tag" placeholder="enter you tag" />
+    <button> Remove </button>
+</div>
+
+@section scripts {
+    <script>
+        class Tag {
+            constructor(id, tag) {
+                this._id = id;
+                this._tag = tag;
+            }
+
+            get id() {
+                return this._id;
+            }
+
+            get tag() {
+                return this._tag;
+            }
+
+            set tag(text) {
+                this._tag = text;
+            }
+        }
+
+        class Answer {
+            constructor(answer, isTrue, id) {
+                this._answer = answer;
+                this._isTrue = isTrue;
+                this._id = id;
+                this._index;
+            }
+
+            get id() {
+                return this._id;
+            }
+
+            get answer() {
+                return this._answer;
+            }
+
+            set answer(text) {
+                this._answer = text;
+            }
+
+            get isTrue() {
+                return this._isTrue;
+            }
+
+            set isTrue(value) {
+                this._isTrue = value;
+            }
+        }
+
+        class Question {
+            constructor(question, id) {
+                this._question = question;
+                this._answers = [];
+                this._id = id;
+                this._index = 0;
+            }
+
+            get id() {
+                return this._id;
+            }
+
+            set id(newId) {
+                this._id = newId;
+            }
+
+            get question() {
+                return this._question;
+            }
+
+            set question(value) {
+                this._question = value;
+            }
+
+            get answers() {
+                return this._answers;
+            }
+
+            get answersLength() {
+                return this._answers.length;
+            }
+
+            addAnswer(answer) {
+                this._answers.push(answer);
+            }
+
+            editAnswer(id, text) {
+                this._answers.forEach(function (item, index, array) {
+                    if (item == null) return;
+
+                    if (item.id == id)
+                        item.answer = text;
+                });
+            }
+
+            removeAnswerById(id) {
+                this._answers.forEach(function (item, index, array) {
+                    if (item == null) return;
+
+                    if (item.id == id)
+                        array[id] = null;
+                });
+            }
+
+            selectTrueOneAnswer(id) {
+                this._answers.forEach(function (item, index, array) {
+                    if (item == null) return;
+
+                    if (item.id == id) {
+                        item.isTrue = true;
+                    } else {
+                        item.isTrue = false;
+                    }
+                });
+            }
+
+            normalizeAnswers() {
+                let indexAnswer = 0;
+
+                this._answers = this._answers.filter((item) => { // Remove null values
+                    if (item != null) {
+                        item.index = indexAnswer++;
+
+                        return item;
+                    }
+                });
+            }
+        };
+
+        class Test {
+            constructor() {
+                this._testName = 'Test_' + new Date().getMilliseconds();
+                this._description = 'description';
+                this._questions = [];
+                this._tags = [];
+            }
+
+            get testName() {
+                return this._testName;
+            }
+
+            set testName(name) {
+                this._testName = name;
+            }
+
+            get testDescription() {
+                return this._description;
+            }
+
+            set testDescription(description) {
+                this._description = description;
+            }
+
+            get tags() {
+                return this._tags;
+            }
+
+            get tagsLength() {
+                return this._tags.length;
+            }
+
+            get questions() {
+                return this._questions;
+            }
+
+            get questionsLength() {
+                return this._questions.length;
+            }
+
+            getTagById(id) {
+                return this._tags.filter((item, index, array) => item != null ? item.id == id : false)[0];
+            }
+
+            addTag(tag) {
+                this._tags.push(tag);
+            }
+
+            editTag(id, text) {
+                this._tags.forEach((item, index, array) => {
+                    if (item == null) return;
+
+                    if (item.id == id)
+                        array[index].tag = text;
+                });
+            }
+
+            removeTag(id) {
+                this._tags.forEach((item, index, array) => {
+                    if (item == null) return;
+
+                    if (item.id == id)
+                        array[id] = null;
+                });
+            }
+
+            getQuestionById(id) {
+                return this._questions.filter((item, index, array) => item != null ? item.id == id : false)[0];
+            }
+
+            addQuestion(question) {
+                this._questions.push(question);
+            }
+
+            editQuestion(id, text) {
+                this._questions.forEach((item, index, array) => {
+                    if (item == null) return;
+
+                    if (item.id == id)
+                        array[id].question = text;
+                });
+            }
+
+            removeQuestionById(id) {
+                this._questions.forEach((item, index, array) => {
+                    if (item == null) return;
+
+                    if (item.id == id)
+                        array[id] = null;
+                });
+            }
+
+            normalizeQuestions() {
+                let indexQuestion = 0;
+
+                this._questions = this._questions.filter((item) => { // Remove null values
+                    if (item != null) {
+                        item.index = indexQuestion++;
+
+                        item.normalizeAnswers();
+                        return item;
+                    }
+                });
+            }
+
+            normalizeTags() {
+                this._questions = this._questions.filter((item) => { // Remove null values
+                    if (item != null)
+                        return item;
+                });
+            }
+        };
+
+        class TestManager {
+            constructor() {
+                this._test = new Test();
+            }
+
+            get test() {
+                return this._test;
+            }
+
+            get testName() {
+                return this._test.testName;
+            }
+
+            changeTestName(name) {
+                this._test.testName = name;
+            }
+
+            changeTestDescription(description) {
+                this._test.testDescription = description;
+            }
+
+            #createDOMElementQuestion(id) {
+                let newQuestionTextElement = $('.question-controls input[name="newQuestion"]');
+                let newQuestion = $('#template-question').clone();
+
+                newQuestion.removeAttr('id');
+                newQuestion.attr('data-id', id);
+                newQuestion.find('button').on('click', (event) => {
+                    event.preventDefault();
+
+                    let button = $(event.target);
+
+                    if (button.hasClass('add')) {
+                        this.createAnswer(newQuestion);
+                    } else {
+                        this.removeQuestion(id);
+                        this.#removeDOMElementQuestion(newQuestion);
+                    }
+                });
+                newQuestion.appendTo($('.questions .list'));
+
+                let newQuestionInput = newQuestion.find('input[name="question"]');
+                newQuestionInput.val(newQuestionTextElement.val());
+                newQuestionInput.change(() => {
+                    this.editQuestion(newQuestion.attr('data-id'), newQuestionInput.val());
+                });
+
+                setTimeout(() => newQuestionTextElement.val(''), 0);
+
+                return newQuestionTextElement.val();
+            }
+            #removeDOMElementQuestion(element) {
+                element.empty();
+            }
+
+            createQuestion() {
+                let newIdQuestion = this._test.questionsLength;
+                let questionText = this.#createDOMElementQuestion(newIdQuestion);
+
+                this._test.addQuestion(new Question(questionText, newIdQuestion));
+            }
+            editQuestion(id, text) {
+                this._test.editQuestion(id, text);
+            }
+            removeQuestion(id) {
+                this._test.removeQuestionById(id);
+            }
+
+            #createDOMElementAnswer(id) {
+                let answerElement = $('.create-question[data-id="' + id + '"]');
+                let newAnswerId = this._test.getQuestionById(id).answersLength;
+                let newAnswerTextElement = answerElement.find('input[name="newAnswer"]');
+                let newAnswerClone = $('#template-answer').clone();
+
+                newAnswerClone.removeAttr('id');
+                newAnswerClone.attr('data-id', newAnswerId);
+                newAnswerClone.find('button').on('click', (event) => {
+                    event.preventDefault();
+
+                    this._test.getQuestionById(id).removeAnswerById(newAnswerId);
+                    this.#removeElementAnswer(newAnswerClone);
+                });
+                newAnswerClone.appendTo(answerElement.find('.answers'));
+
+                let newAnswerInput = newAnswerClone.find('input');
+                newAnswerInput.val(newAnswerTextElement.val());
+                newAnswerInput.change(() => {
+                    this.editAnswer(id, newAnswerId, newAnswerInput.val());
+                });
+
+                let newAnswerRadioButton = $('<input type="radio" name="question-' + id + '"/>');
+                newAnswerRadioButton.attr('checked', 'checked');
+                newAnswerRadioButton.change(() => {
+                    this._test.getQuestionById(id).selectTrueOneAnswer(newAnswerId);
+                });
+                newAnswerRadioButton.appendTo(newAnswerClone);
+
+                setTimeout(() => newAnswerTextElement.val(''), 0);
+
+                return {
+                    text: newAnswerTextElement.val(),
+                    isTrue: false
+                };
+            }
+            #removeElementAnswer(element) {
+                element.empty();
+            }
+
+            createAnswer(questionElement) { // questionElement - DOMElement(jquery)
+                let idQuestion = questionElement.attr('data-id');
+                let question = this._test.getQuestionById(idQuestion);
+                let newIdAnswer = question.answersLength;
+                let answerData = this.#createDOMElementAnswer(idQuestion);
+
+                question.addAnswer(new Answer(answerData.text, answerData.isTrue, newIdAnswer));
+                question.selectTrueOneAnswer(newIdAnswer);
+            }
+            editAnswer(idQuestion, idAnswer, text) {
+                this._test.getQuestionById(idQuestion).editAnswer(idAnswer, text);
+            }
+            removeAnswer(idQuestion, idAnswer) {
+                this._test.getQuestionById(idQuestion).removeAnswerById(idAnswer);
+            }
+
+            #createDOMElementTag(id) {
+                let newTagTextElement = $('.tags-controls input[name="newTag"]');
+                let newTag = $('#template-tag').clone();
+
+                newTag.removeAttr('id');
+                newTag.attr('data-id', id);
+                newTag.find('button').on('click', (event) => {
+                    event.preventDefault();
+
+                    this.removeTag(id);
+                    this.#removeDOMElementTag(newTag);
+                });
+                newTag.appendTo($('.tags .list'));
+
+                let newTagInput = newTag.find('input[name="tag"]');
+                newTagInput.val(newTagTextElement.val());
+                newTagInput.change(() => {
+                    this.editTag(newTag.attr('data-id'), newTagInput.val());
+                });
+
+                setTimeout(() => newTagTextElement.val(''), 0);
+
+                return newTagTextElement.val();
+            }
+            #removeDOMElementTag(element) {
+                element.empty();
+            }
+
+            createTag() {
+                let newIdTag = this._test.tagsLength;
+                let tagText = this.#createDOMElementTag(newIdTag);
+
+                this._test.addTag(new Tag(newIdTag, tagText));
+            }
+            editTag(idTag, text) {
+                this._test.editTag(idTag, text);
+            }
+            removeTag(idTag) {
+                this._test.removeTag(idTag);
+            }
+
+            #preAnswerDataToSend(answers) {
+                return answers.map((itemAnswer, indexAnswer, arrayAnswer) => {
+                    return {
+                        Index: indexAnswer,
+                        Text: itemAnswer.answer,
+                        IsTrue: itemAnswer.isTrue
+                    };
+                });
+            }
+            #preQuestionDataToSend(questions) {
+                return questions.map((itemQuestion, indexQuestion, arrayQuestion) => {
+                    return {
+                        Index: indexQuestion,
+                        Text: itemQuestion.question,
+                        Answers: this.#preAnswerDataToSend(itemQuestion.answers),
+                        AnswersCount: itemQuestion.answersLength
+                    };
+                });
+            }
+            #preTagDataToSend(tags) {
+                return tags.map((itemTag, indexTag, arrayQuestion) => {
+                    return {
+                        Name: itemTag.tag
+                    };
+                });
+            }
+            #preTestDataToSend() {
+                const value = {
+                    Name: this._test.testName,
+                    Description: this._test.testDescription,
+                    Questions: this.#preQuestionDataToSend(this._test.questions),
+                    CountQuestions: this._test.questionsLength,
+                    Tags: this.#preTagDataToSend(this._test.tags)
+                };
+
+                return JSON.stringify(value);
+            }
+
+            #sendTest() {
+                $.ajax({
+                    url: '../api/tests/post',
+                    type: 'POST',
+                    contentType: "application/json",
+                    data: this.#preTestDataToSend(),
+                    success: function (data) {
+                        window.location.href = '..';
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+
+                    }
+                })
+            }
+
+            createTest() {
+                if ($('input[name="testName"]').val() != '' && this._test.questionsLength > 0) {
+                    this._test.normalizeTags();
+                    this._test.normalizeQuestions();
+
+                    this.#preTestDataToSend();
+                    this.#sendTest();
+                } else {
+                    alert('Enter test name or question');
+                }
+            }
+        }
+
+        let testManager = new TestManager();
+
+        $(document).ready(() => {
+            $('input[name="testName"]').change(function () {
+                testManager.changeTestName($(this).val());
+            });
+
+            $('input[name="description"]').change(function () {
+                testManager.changeTestDescription($(this).val());
+            });
+
+            $('button.add').on('click', (event) => {
+                event.preventDefault();
+
+                testManager.createQuestion();
+            });
+
+            $('button.addTag').on('click', (event) => {
+                event.preventDefault();
+
+                testManager.createTag();
+            });
+
+            $('button.cancel').on('click', (event) => {
+                window.location.href = '..';
+            });
+
+            $('button.create').on('click', (event) => {
+                testManager.createTest();
+            })
+        })
+    </script>
+}
