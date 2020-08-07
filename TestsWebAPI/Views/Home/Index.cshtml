@@ -24,11 +24,15 @@
 
 <div class="center-panel search-block">
     <p style="height: 25px; padding: 0 5px 0 5px;">&#x1F50D;</p>
-    <div class="search-object"><input type="text" id="searchText" placeholder="Input test name or tag, like as t:tag1 tag2 tag3" /></div>
+    <div class="search-object"><input type="text" id="searchText" placeholder="Input test name" /></div>
     <button id="search-button">Search</button>
 </div>
 
-<div class="tests-block"></div>
+<div class="tests-block">
+    <div class="create-new-test">
+        @Html.ActionLink("Create new test", "CreateTest")
+    </div>
+</div>
 
 <div id="template-test-block" class="test-info-block flex-column">
     <h3></h3>
@@ -73,12 +77,16 @@
         }
 
         function displayDataFromResponse(data) {
-            if (data == null) {
-                $('.tests-block').text('Не найдено')
+            if (data == null || data.length == 0) {
+                clearTestsBlock();
+                setTestsBlockText('Не найдено');
+                appendTextBoxToTestBlock();
                 return;
             }
 
             data.forEach((item, index, array) => {
+                if (item.Questions == null) return;
+
                 let newTestBlock = $('#template-test-block').clone();
 
                 newTestBlock.removeAttr('id');
@@ -122,25 +130,15 @@
         function searchContent() {
             let textRequest = $('#searchText').val();
 
-            let searchRequest;
-
-            if (textRequest.includes('t:')) {
-                searchRequest = {
-                    tags: textRequest.replace('t:', '')
-                };
-            } else {
-                searchRequest = {
-                    name: textRequest
-                };
-            }
-
             $.ajax({
-                url: '../api/tests/searchTests',
+                url: '../api/tests/SearchName',
                 type: 'POST',
-                dataType: 'json',
-                data: JSON.stringify(searchRequest),
+                contentType: "application/json",
+                data: JSON.stringify(textRequest),
                 success: function (data) {
                     clearTestsBlock();
+
+                    appendTextBoxToTestBlock();
 
                     displayDataFromResponse(data);
                 },
@@ -152,6 +150,16 @@
 
         function clearTestsBlock() {
             $('.tests-block').empty();
+        }
+
+        function setTestsBlockText(text) {
+            $('.tests-block').text(text);
+        }
+
+        function appendTextBoxToTestBlock() {
+            $('.tests-block').append(`<div class="create-new-test">
+                                            @Html.ActionLink("Create new test", "CreateTest")
+                                       </div>`);
         }
 
         function openPreview(element) {
@@ -244,26 +252,6 @@
 
         function clearPreviewTags() {
             $('.preview-block .tags').empty();
-        }
-
-        function searchByTag(id, nameTag) {
-            $.ajax({
-                url: '../api/tests/SearchTag',
-                type: 'POST',
-                dataType: 'json',
-                contentType: "application/json;charset=utf-8",
-                data: JSON.stringify({
-                    Id: id,
-                    Name: nameTag
-                }),
-                success: function (data) {
-                    clearTestsBlock();
-                    displayDataFromResponse(data);
-                },
-                error: function (jqXHR, textStatus, errorThrown) {
-                    printError(textStatus);
-                }
-            });
         }
 
         function openTest(id) {

@@ -38,8 +38,8 @@ namespace TestsWebAPI.Controllers
         }
 
         // GET api/Tests/SearchName
-        [HttpGet, Route("api/tests/SearchName/")]
-        public ICollection<Test> SearchName(string name)
+        [HttpPost, Route("api/tests/SearchName/")]
+        public ICollection<Test> SearchName([FromBody]string name)
         {
             using (var testContext = new TestContext())
             {
@@ -61,31 +61,6 @@ namespace TestsWebAPI.Controllers
                         .ToList();
                 }
 
-                return tests;
-            }
-        }
-
-        // GET api/Tests/SearchName
-        [HttpPost, Route("api/tests/SearchTag/")]
-        public ICollection<Test> SearchTag(Tag tag)
-        {
-            using (var testContext = new TestContext())
-            {
-                ICollection<Test> tests = new List<Test>();
-                if (tag == null)
-                {
-                    tests = testContext.Tests
-                        .ToList();
-                }
-                else
-                {
-                    tests = testContext.Tests
-                        .Include(t => t.Questions)
-                        .Include(t => t.Tags)
-                        .Where(t => t.Tags
-                                    .Any(tg => tg.Id == tag.Id))
-                        .ToList();
-                }
                 return tests;
             }
         }
@@ -142,6 +117,8 @@ namespace TestsWebAPI.Controllers
         // POST api/Tests
         public void Post([FromBody] Test newTest)
         {
+            if (newTest == null || newTest?.Questions.Count == 0) return;
+
             using (TestContext testContext = new TestContext())
             {
                 testContext.Tests.Add(newTest);

@@ -48,6 +48,21 @@ header {
     flex-wrap: wrap;
 }
 
+.tests-block .create-new-test {
+    height: 80px;
+    display: flex;
+    margin: 5px;
+    border: 1px solid black;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    border-radius: 5px;
+}
+
+.tests-block .create-new-test a {
+    margin: 5px;
+    align-self: center;
+}
+
 #template-test-block,
 #template-tag,
 #template-question,
